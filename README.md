@@ -165,7 +165,7 @@ The Docker image is a two-stage build: the official Node image type-checks, runs
 
 ## Icons
 
-UI icons are a small SVG sprite at `public/assets/icons.svg`, vendored from [Remix Icon](https://remixicon.com) (Apache License 2.0) and served with everything else, so no icon font or CDN is loaded. To add one, put its name in `scripts/vendor-icons.mjs` and run:
+UI icons are a small SVG sprite at `public/assets/icons.svg`, vendored from [Remix Icon](https://remixicon.com) (Remix Icon License v1.0) and served with everything else, so no icon font or CDN is loaded. To add one, put its name in `scripts/vendor-icons.mjs` and run:
 
 ```sh
 npm pack remixicon --pack-destination /tmp && tar -xzf /tmp/remixicon-*.tgz -C /tmp
@@ -222,7 +222,7 @@ Dockerfile, docker-compose.yml, .env.example
 
 ## Credits
 
-- **[Remix Icon](https://remixicon.com)** by the Remix Design team provides the UI icons, used under the [Apache License 2.0](https://github.com/Remix-Design/RemixIcon/blob/master/License). The icons are vendored into `public/assets/icons.svg`; the file header carries the notice.
+- **[Remix Icon](https://remixicon.com)** by Remix Design provides the UI icons, used as interface elements under the [Remix Icon License v1.0](https://github.com/Remix-Design/RemixIcon/blob/master/License), which permits this use and asks only that the icons not be sold as a set or used as a brand mark. Abode's own door icon is an original drawing, not a Remix icon. The icons are vendored into `public/assets/icons.svg`; the file header carries the notice.
 - **[lowdb](https://github.com/typicode/lowdb)** by typicode, MIT License, stores the data.
 - Abode started life as `a/`, an alias redirector. The `a` stuck, and now it's the first letter of the name.
 - The color themes are original palettes inspired by the editor themes they are named after: Dracula, Monokai, One Dark, Solarized, Nord, Gruvbox, Tokyo Night, Catppuccin, GitHub, Night Owl, [SynthWave '84](https://github.com/robb0wen/synthwave-vscode) by Robb Owen, [Pink Cat Boo](https://github.com/ftsamoyed/PinkCatBoo) by ftsamoyed, and [Doki Theme](https://github.com/doki-theme/doki-theme-vscode) (Nekopara Chocola) by Unthrottled.
