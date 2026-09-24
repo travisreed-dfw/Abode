@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c0e12">
+  <title>Abode · aliases</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Abode">
+  <link rel="stylesheet" href="/assets/style.css">
+  <script>
+    // Apply the cached theme before first paint so pages don't flash the default.
+    try {
+      var t = JSON.parse(localStorage.getItem('alias.theme') || 'null');
+      if (t && t.vars) for (var k in t.vars) document.documentElement.style.setProperty(k, t.vars[k]);
+      if (t && t.id) {
+        var q = '?theme=' + t.id;
+        document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="manifest"]').forEach(function (l) { l.href = l.getAttribute('href').split('?')[0] + q; });
+        var m = document.querySelector('meta[name="theme-color"]'); if (m && t.vars['--bg']) m.content = t.vars['--bg'];
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <main>
+    <header class="page-header">
+      <div>
+        <h1><a href="/">a/</a> <span class="page-title">aliases</span></h1>
+        <p class="tagline">Short links for your network. Go to <code>http://a/&lt;name&gt;</code> and land on the aliased URL.</p>
+      </div>
+      <nav class="page-nav"><a href="/" aria-label="Home"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#home"/></svg><span class="nav-label">Home</span></a><a href="/documentation" aria-label="Documentation"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#book"/></svg><span class="nav-label">Docs</span></a></nav>
+    </header>
+
+    <p id="hint" class="hint" hidden></p>
+
+    <form id="add-form" autocomplete="off">
+      <label class="name-field">
+        <span class="prefix">a/</span>
+        <input id="add-name" name="name" placeholder="name" required maxlength="64" spellcheck="false">
+      </label>
+      <input id="add-url" name="url" type="url" placeholder="https://example.com" required spellcheck="false">
+      <button type="submit"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#add"/></svg>Add</button>
+      <input id="add-description" name="description" class="description-field" placeholder="Description (optional)" maxlength="200">
+      <p class="tip">Tip: put <code>%s</code> in the URL where the rest of the path should go, e.g. <code>https://www.google.com/search?q=%s</code> makes <code>a/g/cats</code> search for cats.</p>
+    </form>
+    <p id="add-error" class="error" role="alert" hidden></p>
+
+    <section>
+      <div class="list-header">
+        <h2 id="list-title">Aliases</h2>
+        <input id="search" type="search" placeholder="Filter…" aria-label="Filter aliases" spellcheck="false">
+      </div>
+      <ul id="alias-list" class="alias-list"></ul>
+      <p id="empty" class="empty" hidden>No aliases yet. Add your first one above.</p>
+      <p id="no-match" class="empty" hidden>Nothing matches that filter.</p>
+      <p id="builtins" class="builtins"></p>
+    </section>
+
+    <section class="profiles-section">
+      <div class="list-header">
+        <h2 id="profiles-title">Profiles</h2>
+      </div>
+      <p class="tip">Everyone who has registered on the home page. Deleting a profile removes its bookmarks; aliases are shared and unaffected.</p>
+      <ul id="profile-list" class="alias-list"></ul>
+      <p id="profiles-empty" class="empty" hidden>No profiles yet.</p>
+    </section>
+
+    <footer class="toolbar">
+      <a class="button" href="/api/export" download><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#download"/></svg>Export JSON</a>
+      <button id="import-btn" type="button"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#upload"/></svg>Import JSON</button>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+      <span id="toolbar-msg" class="toolbar-msg" role="status"></span>
+    </footer>
+  </main>
+  <script type="module" src="/assets/client/aliases.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c0e12">
+  <title>Abode · documentation</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Abode">
+  <link rel="stylesheet" href="/assets/style.css">
+  <script>
+    // Apply the cached theme before first paint so pages don't flash the default.
+    try {
+      var t = JSON.parse(localStorage.getItem('alias.theme') || 'null');
+      if (t && t.vars) for (var k in t.vars) document.documentElement.style.setProperty(k, t.vars[k]);
+      if (t && t.id) {
+        var q = '?theme=' + t.id;
+        document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="manifest"]').forEach(function (l) { l.href = l.getAttribute('href').split('?')[0] + q; });
+        var m = document.querySelector('meta[name="theme-color"]'); if (m && t.vars['--bg']) m.content = t.vars['--bg'];
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <main class="docs">
+    <header class="page-header">
+      <div>
+        <h1><a href="/">a/</a> <span class="page-title">documentation</span></h1>
+        <p class="tagline">Abode: everything you can do from <code>http://a/</code>.</p>
+      </div>
+      <nav class="page-nav"><a href="/" aria-label="Home"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#home"/></svg><span class="nav-label">Home</span></a><a href="/aliases" aria-label="Aliases"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#links"/></svg><span class="nav-label">Aliases</span></a></nav>
+    </header>
+
+    <nav class="docs-toc" aria-label="Contents">
+      <a href="#home">Home page</a>
+      <a href="#search">Search and bangs</a>
+      <a href="#bangs">Built-in bangs</a>
+      <a href="#your-bangs">Your aliases as bangs</a>
+      <a href="#aliases">Aliases</a>
+      <a href="#bookmarks">Bookmarks</a>
+      <a href="#tips">Tips</a>
+    </nav>
+
+    <section id="home">
+      <h2>Home page</h2>
+      <p>The name <code>a</code> is just the DNS record your network points at this server; if yours is called something else, every example on these pages already shows the name you used to get here.</p>
+      <p><code>http://a/</code> is a start page for everyone on the network. The first visit asks for a username. There are no passwords: <strong>Register</strong> creates a new profile, <strong>Log in</strong> opens an existing one, and the browser remembers the choice for a year. If a name is already taken, Register says so; pick another.</p>
+      <p>Each profile has its own default search engine, its own bookmarks and its own color theme. Aliases are shared by everyone.</p>
+      <p><strong>Themes.</strong> The dropdown in the top bar switches the colors for your profile: the default Midnight plus palettes inspired by popular editor themes (Dracula, Monokai, One Dark, Solarized, Nord, Gruvbox, Tokyo Night, Catppuccin, GitHub, Night Owl, SynthWave '84, Pink Cat Boo, Doki's Nekopara Chocola, and two light ones). Your choice is saved to your profile and follows you to the aliases and documentation pages in this browser, and the tab icon and home-screen icon are drawn in the same colors.</p>
+    </section>
+
+    <section id="search">
+      <h2>Search and bangs</h2>
+      <p>Type anything into the search bar and press Enter. Where it goes, in order:</p>
+      <ol>
+        <li><strong>A <code>!bang</code> anywhere in the query</strong> picks where it goes: <code>!w red panda</code> or <code>red panda !w</code> searches Wikipedia, <code>!book jackson</code> sends the word to your <code>book</code> alias, <code>!book</code> alone opens it. Bangs that aren't built in and aren't one of your aliases (DuckDuckGo supports thousands, such as <code>!hn</code> or <code>!gm</code>) are handed to DuckDuckGo, which resolves them.</li>
+        <li><strong>Otherwise</strong> the engine in the dropdown is used. Plain words never jump to an alias, so <code>book jackson</code> is an ordinary search even though a <code>book</code> alias exists.</li>
+      </ol>
+      <p>Every bang is also a path on this server, so the same shortcuts work from any address bar without opening the home page: <code>http://a/yt/kitty cats</code> searches YouTube, <code>http://a/yt</code> opens it.</p>
+    </section>
+
+    <section id="bangs">
+      <h2>Built-in bangs</h2>
+      <p>These are always available and their names can't be used for aliases.</p>
+      <table id="bang-table">
+        <thead><tr><th>Bang</th><th>Searches</th><th class="col-path">As a path</th><th>Alone</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="your-bangs">
+      <h2>Your aliases as bangs</h2>
+      <p>Every alias on the <a href="/aliases">aliases page</a> works the same way as a built-in bang: <code>!name words</code> in the search bar, or <code>http://a/name/words</code> in an address bar. An alias whose target contains <code>%s</code> receives the words as a search term; otherwise they're appended to its path.</p>
+      <table id="alias-table">
+        <thead><tr><th>Bang</th><th>Alias</th><th class="col-path">As a path</th><th>Alone</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p id="alias-table-empty" class="empty" hidden>No aliases yet. <a href="/aliases">Add one.</a></p>
+    </section>
+
+    <section id="aliases">
+      <h2>Aliases</h2>
+      <p>An alias is a short name for a URL: <code>http://a/gh</code> can send you to <code>https://github.com</code>. Manage them on the <a href="/aliases">aliases page</a>.</p>
+      <ul>
+        <li><strong>Names</strong> are lowercase letters, numbers, dots, dashes and underscores, up to 64 characters. Capitalisation doesn't matter when you use them.</li>
+        <li><strong>Extra path is passed through.</strong> <code>http://a/gh/travisreed</code> → <code>https://github.com/travisreed</code>. A query string is passed along too.</li>
+        <li><strong>Search aliases.</strong> Put <code>%s</code> in the target where the words should go: <code>https://www.google.com/search?q=%s</code> makes <code>http://a/g/cats</code> a search. This is how you make your own bangs.</li>
+        <li><strong>Unknown names</strong> take you to the aliases page with the name prefilled, so <code>http://a/newthing</code> is the fastest way to create <code>newthing</code>.</li>
+        <li><strong>Descriptions</strong> are optional notes shown in the list. <strong>Hits</strong> count every redirect so you can see what's used.</li>
+        <li><strong>Export / Import</strong> download and restore a JSON backup of aliases, profiles and bookmarks. Importing updates existing entries and adds new ones; it never deletes. The server also writes a backup by itself every day and keeps the last thirty.</li>
+        <li><strong>Profiles</strong> are listed at the bottom of the aliases page. Deleting one (tick the box, type its name) removes that profile and its bookmarks, for cleaning up names made in error.</li>
+        <li>Reserved names: <code>api</code>, <code>aliases</code>, <code>assets</code>, <code>documentation</code>, and the built-in bang names above.</li>
+      </ul>
+    </section>
+
+    <section id="bookmarks">
+      <h2>Bookmarks</h2>
+      <p>The buttons under the search bar. Press <strong>Edit</strong>, give each one a label and a URL, then <strong>Save</strong>. A URL can be a full address or a path on this server, such as <code>/aliases</code> or <code>/plex</code>. The server fetches each site's icon once and keeps it; sites without a usable icon get a colored tile with the first letter of the label.</p>
+      <ul>
+        <li><strong>Shared</strong> puts a bookmark on everyone's home page. Anyone can edit a shared bookmark; removing it removes it for all.</li>
+        <li><strong>Hidden</strong> takes a bookmark off your page without affecting anyone else. Useful for shared ones you don't need. Hidden rows still appear in Edit, sorted to the bottom, so you can bring them back.</li>
+        <li><strong>Order</strong> is yours alone: the arrows in Edit arrange the buttons on your page.</li>
+        <li><strong>Status dot.</strong> Bookmarks that point at something on the home network (a private IP, a name without dots, or an alias to one) get a green or red dot showing whether the service answered in the last minute. Internet sites get no dot; the server never pings them.</li>
+      </ul>
+    </section>
+
+    <section id="tips">
+      <h2>Tips</h2>
+      <ul>
+        <li><strong>Address bar keyword.</strong> Add a custom search engine in your browser with the URL <code>http://a/%s</code> and the keyword <code>a</code>. Then <code>a</code>, space, <code>yt kitty cats</code> in the address bar goes straight there.</li>
+        <li><strong>New-tab page.</strong> Set the browser's home or new-tab page to <code>http://a/</code>.</li>
+        <li><strong>Install it.</strong> On iPhone or iPad use Share → Add to Home Screen; on Android and desktop Chrome use the Install option in the browser menu. It opens full-screen with its own icon.</li>
+        <li><strong>Typing just <code>a</code></strong> may trigger a web search. Type <code>a/</code> with the slash, or <code>http://a/</code>, the first time; browsers autocomplete it after that.</li>
+      </ul>
+    </section>
+  </main>
+  <script type="module" src="/assets/client/documentation.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c0e12">
+  <title>Abode</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Abode">
+  <link rel="stylesheet" href="/assets/style.css">
+  <script>
+    // Apply the cached theme before first paint so pages don't flash the default.
+    try {
+      var t = JSON.parse(localStorage.getItem('alias.theme') || 'null');
+      if (t && t.vars) for (var k in t.vars) document.documentElement.style.setProperty(k, t.vars[k]);
+      if (t && t.id) {
+        var q = '?theme=' + t.id;
+        document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="manifest"]').forEach(function (l) { l.href = l.getAttribute('href').split('?')[0] + q; });
+        var m = document.querySelector('meta[name="theme-color"]'); if (m && t.vars['--bg']) m.content = t.vars['--bg'];
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body class="home">
+  <main id="login-view" class="login-view" hidden>
+    <div class="login-card">
+      <h1><a href="/">a/</a></h1>
+      <h2>Login or register</h2>
+      <p class="tagline">Abode is your household's start page. No password needed: pick a username and your home page is yours.</p>
+      <form id="login-form" autocomplete="off">
+        <input id="username" name="username" placeholder="username" required maxlength="32" spellcheck="false" autofocus>
+        <div class="login-actions">
+          <button id="login-btn" type="submit" class="primary"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#user"/></svg>Log in</button>
+          <button id="register-btn" type="button"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#user-add"/></svg>Register</button>
+        </div>
+        <p id="login-error" class="error" role="alert" hidden></p>
+      </form>
+      <p class="login-footer"><a href="/aliases">Manage aliases</a> or <a href="/documentation">read the docs</a> without logging in.</p>
+    </div>
+  </main>
+
+  <main id="dashboard-view" class="dashboard" hidden>
+    <header class="topbar">
+      <h1><a href="/">a/</a></h1>
+      <nav class="page-nav">
+        <a href="/aliases" aria-label="Aliases"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#links"/></svg><span class="nav-label">Aliases</span></a>
+        <a href="/documentation" aria-label="Documentation"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#book"/></svg><span class="nav-label">Docs</span></a>
+      </nav>
+    </header>
+
+    <section class="search-section">
+      <form id="search-form" class="search-row" autocomplete="off">
+        <span class="select-wrap"><select id="engine-select" class="engine-select" aria-label="Search engine"></select></span>
+        <input id="search-input" type="search" placeholder="Search, !bang, or alias name" aria-label="Search" spellcheck="false" autofocus>
+        <button type="submit" class="primary" aria-label="Go"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#arrow-right"/></svg><span class="nav-label">Go</span></button>
+      </form>
+      <p class="search-hint">Try <code>!w red panda</code>, <code>!yt kitty cats</code> or one of your aliases like <code>!book jackson</code>. <a href="/documentation">All the bangs and how it works.</a></p>
+    </section>
+
+    <section class="bookmarks-section">
+      <div class="list-header">
+        <h2>Bookmarks</h2>
+        <button id="edit-bookmarks-btn" type="button"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#pencil"/></svg>Edit</button>
+      </div>
+      <div id="bookmarks" class="bookmarks"></div>
+      <p id="bookmarks-empty" class="empty" hidden>No bookmarks yet. Edit to add some; tick Shared on any the whole household should see.</p>
+
+      <form id="bookmark-editor" class="bookmark-editor" hidden autocomplete="off">
+        <div id="editor-rows"></div>
+        <div class="editor-actions">
+          <button id="add-row-btn" type="button"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#add"/></svg>Add bookmark</button>
+          <span class="spacer"></span>
+          <button type="submit" class="primary"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#check"/></svg>Save</button>
+          <button id="cancel-edit-btn" type="button">Cancel</button>
+        </div>
+        <p id="editor-error" class="error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <p id="install-tip" class="install-tip" hidden></p>
+  </main>
+  <script type="module" src="/assets/client/home.js"></script>
+</body>
+</html>
