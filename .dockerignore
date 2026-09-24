@@ -1,0 +1,9 @@
+node_modules
+data
+.git
+public/assets/client
+public/assets/shared
+README.md
+.env
+.env.example
+docker-compose.yml
