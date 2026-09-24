@@ -1,0 +1,29 @@
+{
+  "name": "abode",
+  "version": "1.0.0",
+  "description": "Abode: a home page and short links for your network. http://a/ opens a search bar and bookmarks; http://a/<name> redirects.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.client.json",
+    "typecheck": "tsc -p tsconfig.server.json",
+    "start": "npm run build && node src/server/main.ts",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "lowdb": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/travisreed-dfw/abode.git"
+  },
+  "homepage": "https://github.com/travisreed-dfw/abode#readme"
+}
