@@ -8,7 +8,8 @@ import { loadConfig } from '../src/server/config.ts';
 
 /** Boots the real HTTP stack on a random port against a scratch database. */
 const dir = await mkdtemp(join(tmpdir(), 'alias-app-test-'));
-const app = await App.create(loadConfig({ PORT: '0', HOST: '127.0.0.1', DB_PATH: join(dir, 'db.json') }));
+// DOCKER_SOCKET points at a path that can't exist so the test is the same on a laptop and on a CI runner that has Docker.
+const app = await App.create(loadConfig({ PORT: '0', HOST: '127.0.0.1', DB_PATH: join(dir, 'db.json'), DOCKER_SOCKET: join(dir, 'no-such.sock') }));
 const log = console.log;
 before(async () => {
   console.log = () => {};
@@ -37,7 +38,7 @@ test('config rejects nonsense ports', () => {
 
 test('health reports whether docker discovery is on', async () => {
   const h = await (await fetch(base() + '/api/health')).json();
-  assert.equal(h.docker, false, 'no socket in the test environment');
+  assert.equal(h.docker, false, 'discovery is off when the socket path does not exist');
 });
 
 test('pages and assets are served; unknown API paths are JSON 404s', async () => {
