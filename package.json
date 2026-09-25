@@ -1,6 +1,6 @@
 {
   "name": "abode",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Abode: a home page and short links for your network. http://a/ opens a search bar and bookmarks; http://a/<name> redirects.",
   "private": true,
   "type": "module",
