@@ -59,7 +59,7 @@ export class Store {
     const out: Bookmark[] = [];
     for (const b of entry.bookmarks as { label?: unknown; url?: unknown }[]) {
       if (!b || typeof b.label !== 'string' || typeof b.url !== 'string') continue;
-      out.push({ id: newId(), label: b.label, url: b.url, owner: entry.name.toLowerCase(), shared: false, createdAt: now, updatedAt: now });
+      out.push({ id: newId(), label: b.label, url: b.url, group: '', owner: entry.name.toLowerCase(), shared: false, createdAt: now, updatedAt: now });
     }
     return out;
   }
@@ -75,6 +75,7 @@ export class Store {
       if (typeof u.theme !== 'string') { u.theme = DEFAULT_THEME_ID; changed = true; }
       if (!Array.isArray(u.hidden)) { u.hidden = []; changed = true; }
       if (!Array.isArray(u.order)) { u.order = []; changed = true; }
+      if (!Array.isArray(u.collapsed)) { u.collapsed = []; changed = true; }
       const legacy = u as User & { bookmarks?: unknown };
       if (legacy.bookmarks !== undefined) {
         const lifted = Store.legacyBookmarksOf(legacy);
@@ -83,6 +84,9 @@ export class Store {
         delete legacy.bookmarks;
         changed = true;
       }
+    }
+    for (const b of d.bookmarks) {
+      if (typeof b.group !== 'string') { b.group = ''; changed = true; }
     }
     for (const a of d.aliases) {
       if (typeof a.description !== 'string') { a.description = ''; changed = true; }

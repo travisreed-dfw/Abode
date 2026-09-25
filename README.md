@@ -27,8 +27,9 @@ Once in:
 - **Bangs.** Put a `!bang` anywhere in the query to send it elsewhere: `!w cats`, `plex server !r`, `!a usb-c hub`. The built-in bangs are `!g !ddg !b !a !w !yt !gh !r !maps !imdb !so !npm`, and every alias is a bang too (`!book jackson`). Any other bang (DuckDuckGo supports thousands, like `!hn` or `!gm`) is sent to DuckDuckGo, which resolves it. Without a bang the query is an ordinary search on the dropdown engine; plain words never jump to an alias.
 - **Built-in bangs are paths too.** `http://a/yt/kitty cats` searches YouTube exactly like `!yt kitty cats`, and `http://a/yt` opens YouTube. So `a/g/…`, `a/w/…`, `a/a/…` and the rest work from any device's address bar without creating aliases for them. The aliases page lists them.
 - **Aliases in the search bar.** Every alias is also a bang: `!book jackson` or `jackson !book` becomes `a/book/jackson`, and `!book` alone opens it, so an alias whose target contains `%s` is a search shortcut of your own. Built-in bang names (`g`, `ddg`, `b`, `a`, `w`, `yt`, `gh`, `r`, `maps`, `imdb`, `so`, `npm`) can't be used as alias names, so the two never clash.
-- **Bookmarks.** Press **Edit** to add buttons with a label and a URL. A URL can be a full address or a site path such as `/aliases` or `/plex`. Tick **Shared** to put a bookmark on every profile's page (anyone can edit shared ones); tick **Hidden** to take one off your own page without affecting others; use the arrows to set your own order. Bookmarks that point at the home network (private IPs, single-label names, or aliases to them) show a green or red status dot from a check the server runs every minute; internet sites are never pinged. Favicons are fetched once and cached in `data/icons/`; sites without a usable icon get a colored letter tile.
+- **Bookmarks.** Press **Edit** to add buttons with a label and a URL. A URL can be a full address or a site path such as `/aliases` or `/plex`. Tick **Shared** to put a bookmark on every profile's page (anyone can edit shared ones); tick **Hidden** to take one off your own page without affecting others; use the arrows to set your own order. Give bookmarks a **group** and they become collapsible sections; which sections you've collapsed is saved to your profile, so it's the same on every device. Bookmarks that point at the home network (private IPs, single-label names, or aliases to them) show a green or red status dot from a check the server runs every minute; internet sites are never pinged. Favicons are fetched once and cached in `data/icons/`; sites without a usable icon get a colored letter tile.
 - **Themes.** The dropdown in the top bar picks a color theme for your profile; the tab favicon and the home-screen icon are drawn in the same colors. the default Midnight, Choose from the default Midnight or palettes inspired by Dracula, Monokai, One Dark, Solarized Dark and Light, Nord, Gruvbox, Tokyo Night, Catppuccin Mocha, GitHub Dark and Light, Night Owl, SynthWave '84, Pink Cat Boo and Doki Theme's Nekopara Chocola. Themes are a table of a dozen base colors each in `src/shared/themes.ts`; the stylesheet only ever uses variables, so adding one is adding a row.
+- **Docker discovery** (optional). Mount the Docker socket and any container labelled `abode.name` shows up as a shared bookmark with a status dot from Docker's state. See [docs/docker-discovery.md](docs/docker-discovery.md), including the note on what the socket grants.
 - **Aliases** in the top bar opens the manager; **Log out** returns to the login screen.
 
 There is a built-in help page at **`http://a/documentation`** covering all of this, with the full bang table generated from the code and a list of your own aliases as bangs.
@@ -70,6 +71,7 @@ Then open `http://<host IP>/`, and make the name resolve: [docs/dns.md](docs/dns
 - [Synology NAS](docs/synology.md)
 - [Making `a` resolve: router, Pi-hole, AdGuard, Synology DNS, Netgear Orbi, hosts files](docs/dns.md)
 - [Phones, tablets and browser tips](docs/mobile.md)
+- [Docker discovery: label your containers and they appear as bookmarks](docs/docker-discovery.md)
 
 Everything Abode stores lives in `./data/`: the database, daily backups and the icon cache. Back up that folder.
 
@@ -82,6 +84,7 @@ Environment variables (all optional):
 | `PORT`    | `80`                             | TCP port to listen on.                                          |
 | `HOST`    | `0.0.0.0`                        | Interface to bind. Use `127.0.0.1` to allow local access only.  |
 | `DB_PATH` | `<project>/data/db.json`         | Path of the lowdb JSON file. Cached favicons go in an `icons/` folder beside it. The Docker image sets `/data/db.json`. |
+| `DOCKER_SOCKET` | `/var/run/docker.sock`     | Docker Engine socket path, or `tcp://host:port` for a socket proxy. Discovery is off when the socket file doesn't exist. |
 
 ## Alias rules
 
@@ -124,9 +127,9 @@ The pages use this API; you can script it too.
 | `POST`   | `/api/login`           | `{"username"}`            | `200` profile + cookie, `404` if unknown |
 | `POST`   | `/api/logout`          | –                         | `204`, cookie cleared      |
 | `GET`    | `/api/me`              | –                         | `200` current profile, `401` if not logged in |
-| `PUT`    | `/api/me`              | `{"searchEngine"?, "theme"?}` | `200` updated profile |
+| `PUT`    | `/api/me`              | `{"searchEngine"?, "theme"?, "collapsed"?}` | `200` updated profile |
 | `GET`    | `/api/bookmarks`       | –                         | `200` bookmarks the profile can see, with hidden flag and status |
-| `PUT`    | `/api/bookmarks`       | `{"bookmarks":[{id?,label,url,shared}], "remove":[ids], "hidden":[ids], "order":[ids]}` | `200` updated list; nothing is deleted by omission |
+| `PUT`    | `/api/bookmarks`       | `{"bookmarks":[{id?,label,url,group?,shared}], "remove":[ids], "hidden":[ids], "order":[ids]}` | `200` updated list; nothing is deleted by omission |
 | `GET`    | `/api/icon?url=`       | –                         | `200` cached favicon for that site's origin, `404` if none |
 | `GET`    | `/api/health`          | –                         | `200` `{ok, aliases, users, uptimeSeconds}` |
 | `GET`    | `/:name[/path][?query]`| –                         | `302` to the target        |
@@ -193,6 +196,7 @@ src/server/users.ts          UserRepository: register, login, profile updates
 src/server/bookmarks.ts      BookmarkRepository: shared/personal bookmarks, per-profile hidden + order
 src/server/status.ts         StatusMonitor: pings home-network URLs for the status dots
 src/server/backups.ts        BackupScheduler: daily backup files in data/backups/
+src/server/docker.ts         DockerDiscovery: labelled containers as shared bookmarks (opt-in)
 src/server/session.ts        CookieSession: the profile cookie
 src/server/icons.ts          IconCache: favicon fetch + disk cache (fetch and clock injectable)
 src/server/static.ts         StaticFiles: page allowlist and safe /assets/ serving

@@ -10,6 +10,7 @@ import { UserRepository } from './users.ts';
 import { BookmarkRepository, targetUrl } from './bookmarks.ts';
 import { StatusMonitor } from './status.ts';
 import { BackupScheduler } from './backups.ts';
+import { DockerDiscovery } from './docker.ts';
 import { CookieSession } from './session.ts';
 import { IconCache } from './icons.ts';
 import { StaticFiles } from './static.ts';
@@ -31,6 +32,7 @@ export class App {
   readonly bookmarks: BookmarkRepository;
   readonly monitor: StatusMonitor;
   readonly backups: BackupScheduler;
+  readonly docker: DockerDiscovery;
   readonly session: CookieSession;
   readonly icons: IconCache;
   readonly files: StaticFiles;
@@ -53,15 +55,16 @@ export class App {
       users: this.users.list(),
       bookmarks: this.bookmarks.all(),
     }));
+    this.docker = new DockerDiscovery({ socketPath: config.dockerSocket });
     this.session = new CookieSession();
     this.icons = new IconCache(join(store.dir, 'icons'));
     this.files = new StaticFiles(config.publicDir, PAGES);
     this.router = new Router();
     aliasRoutes(this.router, this.aliases, this.users, this.bookmarks);
     profileRoutes(this.router, this.users, this.bookmarks, this.session);
-    bookmarkRoutes(this.router, this.bookmarks, this.aliases, this.users, this.session, this.monitor);
+    bookmarkRoutes(this.router, this.bookmarks, this.aliases, this.users, this.session, this.monitor, this.docker);
     iconRoutes(this.router, this.icons);
-    healthRoute(this.router, this.aliases, this.users, this.startedAt);
+    healthRoute(this.router, this.aliases, this.users, this.docker, this.startedAt);
     this.redirect = redirectHandler(this.aliases);
     this.server = createServer((req, res) => this.handle(req, res));
   }
@@ -128,8 +131,10 @@ export class App {
         if (options.background !== false) {
           this.monitor.start();
           this.backups.start();
+          this.docker.start();
         }
-        console.log(`alias server listening on http://${this.config.host}:${this.port}/ (db: ${this.store.path})`);
+        const docker = this.docker.enabled ? ', docker discovery on' : '';
+        console.log(`abode listening on http://${this.config.host}:${this.port}/ (db: ${this.store.path}${docker})`);
         resolve();
       });
     });
@@ -138,6 +143,7 @@ export class App {
   close(): Promise<void> {
     this.monitor.stop();
     this.backups.stop();
+    this.docker.stop();
     return new Promise((resolve) => this.server.close(() => resolve()));
   }
 }

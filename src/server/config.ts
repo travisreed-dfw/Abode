@@ -6,6 +6,8 @@ export type Config = {
   port: number;
   dbPath: string;
   publicDir: string;
+  /** Docker socket to read container labels from; discovery is off when it doesn't exist. */
+  dockerSocket: string;
 };
 
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -25,5 +27,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     dbPath: env.DB_PATH ?? join(PROJECT_ROOT, 'data', 'db.json'),
     publicDir: join(PROJECT_ROOT, 'public'),
+    dockerSocket: env.DOCKER_SOCKET ?? '/var/run/docker.sock',
   };
 }

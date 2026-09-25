@@ -51,9 +51,12 @@ export class BookmarkRepository {
    * Everything this profile can see, in its display order, with hidden ones
    * sorted after visible ones so the editor doesn't make you scroll past them.
    * Unhiding restores a bookmark to its place in the profile's order.
+   * `extra` are virtual bookmarks (Docker-discovered) that join the view but
+   * are never editable.
    */
-  forUser(user: User, status: StatusLookup = () => null): BookmarkView[] {
-    const visible = this.rows.filter((b) => b.shared || b.owner === user.name);
+  forUser(user: User, status: StatusLookup = () => null, extra: Bookmark[] = []): BookmarkView[] {
+    const visible = [...this.rows.filter((b) => b.shared || b.owner === user.name), ...extra];
+    const extraIds = new Set(extra.map((b) => b.id));
     const rank = new Map(user.order.map((id, i) => [id, i]));
     const byCreated = (a: Bookmark, b: Bookmark): number => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
     visible.sort((a, b) => {
@@ -64,7 +67,7 @@ export class BookmarkRepository {
       return byCreated(a, b);
     });
     const hidden = new Set(user.hidden);
-    const views = visible.map((b) => ({ ...b, hidden: hidden.has(b.id), status: status(b), editable: BookmarkRepository.canEdit(b, user) }));
+    const views = visible.map((b) => ({ ...b, hidden: hidden.has(b.id), status: status(b), editable: !extraIds.has(b.id) && BookmarkRepository.canEdit(b, user) }));
     return [...views.filter((b) => !b.hidden), ...views.filter((b) => b.hidden)];
   }
 
@@ -76,7 +79,7 @@ export class BookmarkRepository {
    * shared bookmark for everyone. Hidden ids and order are stored on the
    * profile so they never affect anyone else.
    */
-  async save(user: User, input: BookmarksUpdate): Promise<void> {
+  async save(user: User, input: BookmarksUpdate, extraKnownIds: Iterable<string> = []): Promise<void> {
     if (input.bookmarks !== undefined && !Array.isArray(input.bookmarks)) throw new HttpError(400, 'Bookmarks must be a list.');
     const entries = (input.bookmarks ?? []) as unknown[];
     if (entries.length > MAX_BOOKMARKS) throw new HttpError(400, `Too many bookmarks (limit ${MAX_BOOKMARKS}).`);
@@ -90,6 +93,7 @@ export class BookmarkRepository {
       const e = entry as Record<string, unknown>;
       const shared = e.shared === true;
       if (typeof e.id === 'string' && e.id !== '') {
+        if (e.id.startsWith('docker:')) throw new HttpError(403, `Bookmark ${n}: "${fields.label}" comes from Docker; change the container's labels instead.`);
         const existing = this.get(e.id);
         if (!existing) throw new HttpError(404, `Bookmark ${n}: no bookmark with id "${e.id}".`);
         if (!BookmarkRepository.canEdit(existing, user)) throw new HttpError(403, `Bookmark ${n}: "${existing.label}" belongs to ${existing.owner}.`);
@@ -114,7 +118,7 @@ export class BookmarkRepository {
       this.rows.splice(index, 1);
     }
 
-    const known = new Set(this.rows.map((b) => b.id));
+    const known = new Set([...this.rows.map((b) => b.id), ...extraKnownIds]);
     if (input.hidden !== undefined) user.hidden = normalizeIdList(input.hidden, 'hidden').filter((id) => known.has(id));
     if (input.order !== undefined) {
       const order = normalizeIdList(input.order, 'order').filter((id) => known.has(id));

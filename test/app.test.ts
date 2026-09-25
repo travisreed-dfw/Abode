@@ -35,6 +35,11 @@ test('config rejects nonsense ports', () => {
   assert.equal(loadConfig({ PORT: '8080' }).port, 8080);
 });
 
+test('health reports whether docker discovery is on', async () => {
+  const h = await (await fetch(base() + '/api/health')).json();
+  assert.equal(h.docker, false, 'no socket in the test environment');
+});
+
 test('pages and assets are served; unknown API paths are JSON 404s', async () => {
   assert.equal((await fetch(base() + '/')).status, 200);
   assert.equal((await fetch(base() + '/aliases')).headers.get('content-type'), 'text/html; charset=utf-8');

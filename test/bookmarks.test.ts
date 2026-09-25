@@ -108,3 +108,28 @@ test('import upserts by id and keeps the owner from the file', async () => {
   assert.equal(bookmarks.get(printer.id)!.label, 'Printer (new)');
   await assert.rejects(bookmarks.import([{ label: 'x', url: 'https://x.example' }]), /owner is required/);
 });
+
+test('groups are validated and per-profile collapsed state lives on the profile', async () => {
+  await bookmarks.save(mom, { bookmarks: [{ label: 'Jelly', url: 'https://j.example', group: '  Media  ', shared: true }] });
+  const jelly = bookmarks.forUser(mom).find((b) => b.label === 'Jelly')!;
+  assert.equal(jelly.group, 'Media');
+  await assert.rejects(bookmarks.save(mom, { bookmarks: [{ id: jelly.id, label: 'Jelly', url: jelly.url, group: 'x'.repeat(41), shared: true }] }), /group must be at most/);
+  await users.update('mom', { collapsed: ['Media', 'Media', ''] });
+  assert.deepEqual(users.get('mom')!.collapsed, ['Media']);
+  assert.deepEqual(users.get('kid')!.collapsed, [], "kid's collapsed groups are separate");
+  await assert.rejects(users.update('mom', { collapsed: 'Media' }), /list of group names/);
+});
+
+test('discovered containers join the view as read-only shared bookmarks and can be hidden and ordered', async () => {
+  const docker = [{ id: 'docker:plex', label: 'Plex', url: 'http://a:32400', group: 'Media', owner: 'docker', shared: true, createdAt: '', updatedAt: '' }];
+  const view = bookmarks.forUser(kid, () => null, docker);
+  const plex = view.find((b) => b.id === 'docker:plex')!;
+  assert.equal(plex.editable, false);
+  assert.equal(plex.shared, true);
+  await bookmarks.save(kid, { hidden: ['docker:plex'], order: ['docker:plex'] }, ['docker:plex']);
+  assert.deepEqual(users.get('kid')!.hidden, ['docker:plex']);
+  assert.deepEqual(users.get('kid')!.order[0], 'docker:plex');
+  await assert.rejects(bookmarks.save(kid, { bookmarks: [{ id: 'docker:plex', label: 'Plex', url: 'http://a:32400', shared: true }] }, ['docker:plex']), /comes from Docker/);
+  await bookmarks.save(kid, { remove: ['docker:plex'] }, ['docker:plex']);
+  assert.ok(bookmarks.forUser(kid, () => null, docker).some((b) => b.id === 'docker:plex'), 'remove is a no-op for discovered entries; they live in Docker, not the database');
+});

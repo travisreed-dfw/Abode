@@ -18,6 +18,7 @@ export const MAX_DESCRIPTION = 200;
 /** A generous ceiling so a runaway client can't fill the file; not a UI limit. */
 export const MAX_BOOKMARKS = 200;
 export const MAX_LABEL = 40;
+export const MAX_GROUP = 40;
 
 export function normalizeName(raw: unknown): string {
   if (typeof raw !== 'string') throw new HttpError(400, 'Name is required.');
@@ -86,14 +87,28 @@ function normalizeBookmarkUrl(raw: unknown, index: number): string {
   }
 }
 
-/** Validates one bookmark's label and URL. `index` is used in error messages. */
-export function normalizeBookmarkFields(raw: unknown, index: number): Pick<Bookmark, 'label' | 'url'> {
+export function normalizeGroup(raw: unknown, index: number): string {
+  if (raw === undefined || raw === null) return '';
+  if (typeof raw !== 'string') throw new HttpError(400, `Bookmark ${index}: group must be text.`);
+  const group = raw.trim().replace(/\s+/g, ' ');
+  if (group.length > MAX_GROUP) throw new HttpError(400, `Bookmark ${index}: group must be at most ${MAX_GROUP} characters.`);
+  return group;
+}
+
+/** Validates one bookmark's label, URL and group. `index` is used in error messages. */
+export function normalizeBookmarkFields(raw: unknown, index: number): Pick<Bookmark, 'label' | 'url' | 'group'> {
   if (!raw || typeof raw !== 'object') throw new HttpError(400, `Bookmark ${index} is not an object.`);
   const e = raw as Record<string, unknown>;
   if (typeof e.label !== 'string' || e.label.trim() === '') throw new HttpError(400, `Bookmark ${index}: label is required.`);
   const label = e.label.trim().replace(/\s+/g, ' ');
   if (label.length > MAX_LABEL) throw new HttpError(400, `Bookmark ${index}: label must be at most ${MAX_LABEL} characters.`);
-  return { label, url: normalizeBookmarkUrl(e.url, index) };
+  return { label, url: normalizeBookmarkUrl(e.url, index), group: normalizeGroup(e.group, index) };
+}
+
+export function normalizeNameList(raw: unknown, what: string): string[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw) || raw.some((g) => typeof g !== 'string' || g.length > MAX_GROUP)) throw new HttpError(400, `${what} must be a list of group names.`);
+  return [...new Set((raw as string[]).map((g) => g.trim()).filter((g) => g !== ''))];
 }
 
 export function normalizeIdList(raw: unknown, what: string): string[] {

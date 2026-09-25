@@ -5,6 +5,7 @@ import type { AliasRepository } from '../aliases.ts';
 import type { UserRepository } from '../users.ts';
 import type { CookieSession } from '../session.ts';
 import type { StatusMonitor } from '../status.ts';
+import type { DockerDiscovery } from '../docker.ts';
 import { HttpError } from '../http.ts';
 import type { Context } from '../http.ts';
 import type { Bookmark, User } from '../../shared/types.ts';
@@ -18,6 +19,7 @@ export function bookmarkRoutes(
   users: UserRepository,
   session: CookieSession,
   monitor: StatusMonitor,
+  docker: DockerDiscovery,
 ): void {
   const currentUser = (ctx: Context): User => {
     const user = users.get(session.read(ctx.req));
@@ -25,21 +27,25 @@ export function bookmarkRoutes(
     return user;
   };
 
-  const viewFor = (user: User) => {
+  const discovered = (ctx: Context): Bookmark[] => docker.asBookmarks(ctx.req.headers.host ?? 'localhost');
+
+  const viewFor = (ctx: Context, user: User) => {
+    const extra = discovered(ctx);
     const status = (b: Bookmark): ReturnType<StatusMonitor['statusOf']> => {
+      if (b.owner === 'docker') return docker.statusOf(b.id);
       const url = targetUrl(b, aliases);
       return url ? monitor.statusOf(url) : null;
     };
-    const view = bookmarks.forUser(user, status);
-    monitor.ensure(view.map((b) => targetUrl(b, aliases)).filter((u): u is string => u !== null));
+    const view = bookmarks.forUser(user, status, extra);
+    monitor.ensure(view.filter((b) => b.owner !== 'docker').map((b) => targetUrl(b, aliases)).filter((u): u is string => u !== null));
     return view;
   };
 
-  router.get('/api/bookmarks', (ctx) => ctx.json(200, viewFor(currentUser(ctx))));
+  router.get('/api/bookmarks', (ctx) => ctx.json(200, viewFor(ctx, currentUser(ctx))));
 
   router.put('/api/bookmarks', async (ctx) => {
     const user = currentUser(ctx);
-    await bookmarks.save(user, await ctx.object(BODY_LIMIT));
-    ctx.json(200, viewFor(user));
+    await bookmarks.save(user, await ctx.object(BODY_LIMIT), discovered(ctx).map((b) => b.id));
+    ctx.json(200, viewFor(ctx, user));
   });
 }

@@ -24,34 +24,71 @@ function iconFor(bookmark: BookmarkView): HTMLElement {
   return wrap;
 }
 
-/** The grid of bookmark buttons: everything the profile can see that it hasn't hidden. */
-export class BookmarkGrid {
-  private readonly grid: HTMLElement;
-  private readonly empty: HTMLElement;
+function tile(b: BookmarkView): HTMLAnchorElement {
+  const title = b.owner === 'docker' ? `${b.url} (Docker container)` : b.shared && b.owner ? `${b.url} (shared by ${b.owner})` : b.url;
+  return el('a', { className: 'bookmark', href: b.url, title }, iconFor(b), el('span', { className: 'bm-label' }, b.label));
+}
 
-  constructor(root: ParentNode) {
-    this.grid = $('#bookmarks', root);
+/**
+ * The bookmark buttons: ungrouped ones first, then one collapsible section per
+ * group, in the order groups first appear in the profile's bookmark order.
+ * Which sections are collapsed is saved to the profile via `onCollapse`.
+ */
+export class BookmarkGrid {
+  private readonly root: HTMLElement;
+  private readonly empty: HTMLElement;
+  private collapsed = new Set<string>();
+
+  constructor(root: ParentNode, private readonly onCollapse: (collapsed: string[]) => Promise<void> = async () => {}) {
+    this.root = $('#bookmarks', root);
     this.empty = $('#bookmarks-empty', root);
+  }
+
+  setCollapsed(groups: readonly string[]): void {
+    this.collapsed = new Set(groups);
   }
 
   render(bookmarks: BookmarkView[]): void {
     const shown = bookmarks.filter((b) => !b.hidden);
-    this.grid.replaceChildren(
-      ...shown.map((b) => {
-        const title = b.shared && b.owner ? `${b.url} (shared by ${b.owner})` : b.url;
-        return el('a', { className: 'bookmark', href: b.url, title }, iconFor(b), el('span', { className: 'bm-label' }, b.label));
-      }),
-    );
+    const ungrouped = shown.filter((b) => !b.group);
+    const groups: string[] = [];
+    for (const b of shown) if (b.group && !groups.includes(b.group)) groups.push(b.group);
+
+    const parts: HTMLElement[] = [];
+    if (ungrouped.length) parts.push(el('div', { className: 'bookmark-grid' }, ...ungrouped.map(tile)));
+    for (const name of groups) {
+      const items = shown.filter((b) => b.group === name);
+      const isCollapsed = this.collapsed.has(name);
+      const header = el('button', { type: 'button', className: 'group-header' },
+        icon('arrow-down'), el('span', { className: 'group-name' }, name), el('span', { className: 'group-count' }, String(items.length)));
+      header.setAttribute('aria-expanded', String(!isCollapsed));
+      const body = el('div', { className: 'bookmark-grid', hidden: isCollapsed }, ...items.map(tile));
+      header.addEventListener('click', async () => {
+        const nowCollapsed = !body.hidden;
+        body.hidden = nowCollapsed;
+        header.setAttribute('aria-expanded', String(!nowCollapsed));
+        section.classList.toggle('is-collapsed', nowCollapsed);
+        if (nowCollapsed) this.collapsed.add(name); else this.collapsed.delete(name);
+        try {
+          await this.onCollapse([...this.collapsed]);
+        } catch {
+          // the section still toggled locally; the next load will use the saved state
+        }
+      });
+      const section = el('section', { className: 'bookmark-group' + (isCollapsed ? ' is-collapsed' : '') }, header, body);
+      parts.push(section);
+    }
+    this.root.replaceChildren(...parts);
     this.empty.hidden = shown.length > 0;
   }
 
   set visible(value: boolean) {
-    this.grid.hidden = !value;
+    this.root.hidden = !value;
     if (!value) this.empty.hidden = true;
   }
 }
 
-type Draft = { id?: string; label: string; url: string; shared: boolean; hidden: boolean; editable: boolean; owner?: string };
+type Draft = { id?: string; label: string; url: string; group: string; shared: boolean; hidden: boolean; editable: boolean; owner?: string };
 
 /**
  * Inline editor. Every row is a bookmark this profile can see; Shared makes it
@@ -83,7 +120,7 @@ export class BookmarkEditor {
 
     this.cancelBtn.addEventListener('click', () => this.close());
     this.addBtn.addEventListener('click', () => {
-      this.draft.push({ label: '', url: '', shared: false, hidden: false, editable: true });
+      this.draft.push({ label: '', url: '', group: '', shared: false, hidden: false, editable: true });
       this.renderRows();
       const inputs = this.rows.querySelectorAll('input[type="text"], input:not([type])');
       (inputs[inputs.length - 2] as HTMLInputElement | undefined)?.focus();
@@ -97,7 +134,7 @@ export class BookmarkEditor {
       const kept = this.draft.filter((b) => b.label.trim() || b.url.trim());
       try {
         await this.onSave({
-          bookmarks: kept.filter((b) => b.editable).map((b) => ({ id: b.id, label: b.label, url: b.url, shared: b.shared })),
+          bookmarks: kept.filter((b) => b.editable).map((b) => ({ id: b.id, label: b.label, url: b.url, group: b.group, shared: b.shared })),
           remove: this.removed,
           hidden: kept.filter((b) => b.hidden && b.id).map((b) => b.id),
           order: kept.filter((b) => b.id).map((b) => b.id),
@@ -115,9 +152,9 @@ export class BookmarkEditor {
 
   open(bookmarks: BookmarkView[], me: string): void {
     this.me = me;
-    this.draft = bookmarks.map((b) => ({ id: b.id, label: b.label, url: b.url, shared: b.shared, hidden: b.hidden, editable: b.editable, owner: b.owner }));
+    this.draft = bookmarks.map((b) => ({ id: b.id, label: b.label, url: b.url, group: b.group, shared: b.shared, hidden: b.hidden, editable: b.editable, owner: b.owner }));
     this.removed = [];
-    if (this.draft.length === 0) this.draft.push({ label: '', url: '', shared: false, hidden: false, editable: true });
+    if (this.draft.length === 0) this.draft.push({ label: '', url: '', group: '', shared: false, hidden: false, editable: true });
     setMessage(this.error, null);
     this.renderRows();
     this.form.hidden = false;
@@ -137,12 +174,18 @@ export class BookmarkEditor {
   }
 
   private renderRows(): void {
+    const groupNames = [...new Set(this.draft.map((b) => b.group).filter((g) => g))].sort();
+    const datalist = el('datalist', { id: 'group-names' }, ...groupNames.map((g) => el('option', { value: g })));
     this.rows.replaceChildren(
+      datalist,
       ...this.draft.map((b, i) => {
         const label = el('input', { value: b.label, placeholder: 'Label', maxLength: 40, required: true, className: 'bm-edit-label', disabled: !b.editable });
         const url = el('input', { value: b.url, placeholder: 'https://example.com or /alias', required: true, className: 'bm-edit-url', spellcheck: false, disabled: !b.editable });
+        const group = el('input', { value: b.group, placeholder: 'Group (optional)', maxLength: 40, className: 'bm-edit-group', disabled: !b.editable });
+        group.setAttribute('list', 'group-names');
         label.addEventListener('input', () => { b.label = label.value; });
         url.addEventListener('input', () => { b.url = url.value; });
+        group.addEventListener('input', () => { b.group = group.value; });
 
         const mine = !b.id || b.owner === this.me;
         const shared = el('input', { type: 'checkbox', checked: b.shared, disabled: !b.editable || !mine });
@@ -167,8 +210,10 @@ export class BookmarkEditor {
           this.renderRows();
         });
 
-        const owner = b.owner && b.shared && b.owner !== this.me ? el('span', { className: 'bm-owner' }, `shared by ${b.owner}`) : '';
-        return el('div', { className: 'editor-row' + (b.hidden ? ' is-hidden' : '') }, letterTile(b.label || '?'), label, url, flags, el('span', { className: 'bm-move' }, up, down), remove, owner);
+        const owner = b.owner === 'docker'
+          ? el('span', { className: 'bm-owner' }, 'from Docker: edit its labels to change; you can still hide or move it')
+          : b.owner && b.shared && b.owner !== this.me ? el('span', { className: 'bm-owner' }, `shared by ${b.owner}`) : '';
+        return el('div', { className: 'editor-row' + (b.hidden ? ' is-hidden' : '') }, letterTile(b.label || '?'), label, url, group, flags, el('span', { className: 'bm-move' }, up, down), remove, owner);
       }),
     );
   }

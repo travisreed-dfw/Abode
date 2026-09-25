@@ -15,6 +15,8 @@ export type Bookmark = {
   id: string;
   label: string;
   url: string;
+  /** Optional section name on the home page; '' means ungrouped. */
+  group: string;
   owner: string;
   shared: boolean;
   createdAt: string;
@@ -34,13 +36,15 @@ export type User = {
   hidden: string[];
   /** Bookmark ids in this profile's display order; unknown ids follow in creation order. */
   order: string[];
+  /** Group names this profile has collapsed on its home page. */
+  collapsed: string[];
   createdAt: string;
   updatedAt: string;
 };
 
 export type AliasInput = { name?: unknown; url?: unknown; description?: unknown };
-export type UserInput = { searchEngine?: unknown; theme?: unknown };
-export type BookmarkInput = { id?: unknown; label?: unknown; url?: unknown; shared?: unknown };
+export type UserInput = { searchEngine?: unknown; theme?: unknown; collapsed?: unknown };
+export type BookmarkInput = { id?: unknown; label?: unknown; url?: unknown; group?: unknown; shared?: unknown };
 /**
  * What the editor saves. `bookmarks` are upserted (no id = create), `remove`
  * lists ids to delete explicitly, `hidden` and `order` are this profile's own.
@@ -54,4 +58,4 @@ export type ImportResult = ImportCounts & { users: ImportCounts; bookmarks: Impo
 /** What the profile list shows; bookmarks are summarised as a count of the ones the profile owns. */
 export type ProfileSummary = { name: string; searchEngine: string; theme: string; bookmarks: number; createdAt: string };
 export type Backup = { exportedAt: string; aliases: Alias[]; users: User[]; bookmarks: Bookmark[] };
-export type Health = { ok: true; aliases: number; users: number; uptimeSeconds: number };
+export type Health = { ok: true; aliases: number; users: number; docker: boolean; uptimeSeconds: number };

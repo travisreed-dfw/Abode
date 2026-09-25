@@ -147,3 +147,6 @@ data/
 public/assets/client/
 public/assets/shared/
 .env
+
+# Local deployment tweaks (e.g. enabling the Docker socket) without editing the tracked compose file
+docker-compose.override.yml

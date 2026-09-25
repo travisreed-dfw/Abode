@@ -36,7 +36,7 @@ class HomePage {
       this.dashboard.hidden = true;
       this.login.show();
     });
-    this.grid = new BookmarkGrid(this.dashboard);
+    this.grid = new BookmarkGrid(this.dashboard, async (collapsed) => { this.user = await this.api.updateProfile({ collapsed }); });
     this.editor = new BookmarkEditor(
       this.dashboard,
       async (update) => { this.bookmarks = await this.api.saveBookmarks(update); },
@@ -64,6 +64,7 @@ class HomePage {
 
   private showDashboard(user: User): void {
     this.user = user;
+    this.grid.setCollapsed(user.collapsed);
     this.login.hide();
     void this.refreshBookmarks();
     if (this.poll === null) this.poll = window.setInterval(() => void this.refreshBookmarks(), 60_000);

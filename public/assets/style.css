@@ -546,12 +546,34 @@ a.button:hover { border-color: var(--accent); background: var(--surface); }
   text-align: center;
 }
 
-.bookmarks {
+.bookmarks { margin-top: 12px; display: flex; flex-direction: column; gap: 14px; }
+.bookmark-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  margin-top: 12px;
 }
+.bookmark-group { display: flex; flex-direction: column; gap: 8px; }
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  min-height: 40px;
+}
+.group-header:hover { color: var(--fg); background: var(--surface); border-color: var(--border); }
+.group-header .icon { margin: 0; transition: transform 120ms ease; }
+.bookmark-group.is-collapsed .group-header .icon { transform: rotate(-90deg); }
+.group-name { flex: 1; }
+.group-count { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .bookmark {
   display: flex;
   flex-direction: column;
@@ -631,13 +653,14 @@ a.button:hover { border-color: var(--accent); background: var(--surface); }
 .editor-row {
   display: grid;
   grid-template-columns: 36px minmax(100px, 1fr) minmax(160px, 2fr) auto auto auto;
-  grid-template-areas: "tile label url flags move remove" ". owner owner owner owner owner";
+  grid-template-areas: "tile label url flags move remove" ". group group group group group" ". owner owner owner owner owner";
   gap: 6px 8px;
   align-items: center;
 }
 .editor-row .bm-letter { grid-area: tile; }
 .editor-row .bm-edit-label { grid-area: label; }
 .editor-row .bm-edit-url { grid-area: url; }
+.editor-row .bm-edit-group { grid-area: group; max-width: 320px; }
 .editor-row .bm-flags { grid-area: flags; display: inline-flex; gap: 10px; white-space: nowrap; }
 .editor-row .bm-move { grid-area: move; display: inline-flex; gap: 2px; }
 .editor-row .danger { grid-area: remove; }
@@ -694,13 +717,14 @@ a.button:hover { border-color: var(--accent); background: var(--surface); }
   .search-row .select-wrap { flex: 1 1 100%; }
   .engine-select { max-width: none; }
   #search-input { flex: 1 1 60%; }
-  .bookmarks { grid-template-columns: repeat(2, 1fr); }
+  .bookmark-grid { grid-template-columns: repeat(2, 1fr); }
   /* Editor row on phones: tile + label + Remove, then URL, then flags and arrows. */
   .editor-row {
     grid-template-columns: 36px 1fr auto;
-    grid-template-areas: "tile label remove" "url url url" "flags flags move" "owner owner owner";
+    grid-template-areas: "tile label remove" "url url url" "group group group" "flags flags move" "owner owner owner";
   }
   .editor-row .bm-move { justify-self: end; }
+  .editor-row .bm-edit-group { max-width: none; }
   .editor-row + .editor-row { margin-top: 6px; padding-top: 10px; }
   /* Forms: description sits above the buttons, buttons fill the row. */
   #add-form button, .edit-form button { order: 2; flex: 1 1 auto; }

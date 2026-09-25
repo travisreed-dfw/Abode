@@ -1,6 +1,6 @@
 import { HttpError } from './http.ts';
 import type { Store } from './store.ts';
-import { normalizeUsername } from './validation.ts';
+import { normalizeNameList, normalizeUsername } from './validation.ts';
 import { DEFAULT_ENGINE_ID, isEngineId } from '../shared/search.ts';
 import { DEFAULT_THEME_ID, isThemeId } from '../shared/themes.ts';
 import type { ImportCounts, ProfileSummary, User, UserInput } from '../shared/types.ts';
@@ -35,7 +35,7 @@ export class UserRepository {
     const name = normalizeUsername(raw);
     if (this.get(name)) throw new HttpError(409, `"${name}" is not available.`);
     const now = new Date().toISOString();
-    const user: User = { name, searchEngine: DEFAULT_ENGINE_ID, theme: DEFAULT_THEME_ID, hidden: [], order: [], createdAt: now, updatedAt: now };
+    const user: User = { name, searchEngine: DEFAULT_ENGINE_ID, theme: DEFAULT_THEME_ID, hidden: [], order: [], collapsed: [], createdAt: now, updatedAt: now };
     this.rows.push(user);
     await this.store.write();
     return user;
@@ -75,7 +75,7 @@ export class UserRepository {
         throw new HttpError(400, `Profile ${i + 1}: ${err instanceof HttpError ? err.message : String(err)}`);
       }
       const ids = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
-      const hidden = ids(e.hidden), order = ids(e.order);
+      const hidden = ids(e.hidden), order = ids(e.order), collapsed = ids(e.collapsed);
       const searchEngine = isEngineId(e.searchEngine) ? e.searchEngine : DEFAULT_ENGINE_ID;
       const theme = isThemeId(e.theme) ? e.theme : DEFAULT_THEME_ID;
       if (seen.has(name)) throw new HttpError(400, `Profile ${i + 1}: "${name}" appears more than once.`);
@@ -86,11 +86,12 @@ export class UserRepository {
         existing.theme = theme;
         existing.hidden = hidden;
         existing.order = order;
+        existing.collapsed = collapsed;
         existing.updatedAt = now;
         counts.updated += 1;
       } else {
         const createdAt = typeof e.createdAt === 'string' ? e.createdAt : now;
-        this.rows.push({ name, searchEngine, theme, hidden, order, createdAt, updatedAt: now });
+        this.rows.push({ name, searchEngine, theme, hidden, order, collapsed, createdAt, updatedAt: now });
         counts.added += 1;
       }
     }
@@ -109,6 +110,7 @@ export class UserRepository {
       if (!isThemeId(input.theme)) throw new HttpError(400, 'Unknown theme.');
       user.theme = input.theme;
     }
+    if (input.collapsed !== undefined) user.collapsed = normalizeNameList(input.collapsed, 'collapsed');
     user.updatedAt = new Date().toISOString();
     await this.store.write();
     return user;
